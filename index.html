@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阿寒的打野計時器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            padding: 20px;
+            background-color: #f4f4f9;
+            margin: 0;
+            gap: 20px;
+        }
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        h1 {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            margin: 0;
+            width: max-content;
+        }
+        .sound-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #4CAF50;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .timer-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            margin: 10px;
+            width: 220px;
+            text-align: center;
+            position: relative;
+        }
+        .timer {
+            font-size: 2em;
+            margin: 20px 0;
+            color: #333;
+        }
+        .timer.time-up {
+            animation: blink 1s infinite;
+            color: #e74c3c;
+        }
+        .input-number {
+            font-size: 1.2em; /* 字體變大 */
+            font-weight: bold; /* 字體加粗 */
+            padding: 8px; /* 增加內邊距 */
+            width: 70%;
+            margin-bottom: 10px;
+            display: inline-block;
+            border: 2px solid #ddd; /* 邊框加粗 */
+            border-radius: 6px; /* 邊框圓角加大 */
+            text-align: center;
+        }
+        .channel-label {
+            font-size: 1.2em;
+            color: #555;
+            font-weight: bold;
+            margin-top: 10px;
+            display: inline-block;
+            margin-left: 5px;
+        }
+        .boss-label {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ff6347;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 1em;
+            cursor: pointer;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
+            margin: 5px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .delete-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+        }
+        .delete-button:hover {
+            background-color: #c0392b;
+        }
+        #timers-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        #add-timer-btn {
+            background-color: #3498db;
+            padding: 12px 25px;
+            font-size: 1.1em;
+        }
+        #add-timer-btn:hover {
+            background-color: #2980b9;
+        }
+        .reminder {
+            color: #e74c3c;
+            font-weight: bold;
+            height: 20px;
+            margin: 10px 0;
+        }
+        @keyframes blink {
+            0% { color: #e74c3c; }
+            50% { color: #ff9999; }
+            100% { color: #e74c3c; }
+        }
+        
+        /* 到期時間表樣式 */
+        .expired-panel {
+            width: 300px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .expired-panel h2 {
+            text-align: center;
+            color: #e74c3c;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .expired-item {
+            background-color: #f8f8f8;
+            border-left: 4px solid #e74c3c;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .expired-channel {
+            font-weight: bold;
+            color: #333;
+        }
+        .expired-time {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .restart-btn {
+            background-color: #3498db;
+            padding: 5px 10px;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        <div class="header">
+            <h1>阿寒的打野計時器</h1>
+            <div class="sound-toggle">
+                <span>聲音提示</span>
+                <label class="switch">
+                    <input type="checkbox" id="soundToggle" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <div id="timers-container"></div>
+        <button id="add-timer-btn" onclick="addTimer()">新增計時器</button>
+    </div>
+
+    <!-- 到期時間表面板 -->
+    <div class="expired-panel">
+        <h2>BOSS已經出了</h2>
+        <div id="expired-list"></div>
+    </div>
+
+    <script>
+        let timerCount = 0;
+        let timers = {};
+        let soundEnabled = true;
+        let expiredTimers = [];
+
+        // 聲音開關事件監聽
+        document.getElementById('soundToggle').addEventListener('change', function(e) {
+            soundEnabled = e.target.checked;
+        });
+
+        function addTimer() {
+            timerCount++;
+            const timerId = timerCount;
+
+            const timerContainer = document.createElement('div');
+            timerContainer.className = 'timer-container';
+            timerContainer.id = 'timer-' + timerId;
+
+            const bossLabel = document.createElement('div');
+            bossLabel.className = 'boss-label';
+            bossLabel.textContent = 'BOSS 計時器';
+
+            const inputNumber = document.createElement('input');
+            inputNumber.type = 'text';
+            inputNumber.className = 'input-number';
+            inputNumber.placeholder = '頻道編號';
+            inputNumber.value = timerId;
+            inputNumber.pattern = '[0-9]*';
+            inputNumber.inputMode = 'numeric';
+            inputNumber.oninput = function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+                if(this.value === '') this.value = timerId;
+            };
+
+            const channelLabel = document.createElement('div');
+            channelLabel.className = 'channel-label';
+            channelLabel.textContent = '頻道';
+
+            const timerDisplay = document.createElement('div');
+            timerDisplay.className = 'timer';
+            timerDisplay.id = 'display-' + timerId;
+            timerDisplay.textContent = '00:00';
+
+            const reminderText = document.createElement('div');
+            reminderText.className = 'reminder';
+            reminderText.id = 'reminder-' + timerId;
+
+            const startBossButton = document.createElement('button');
+            startBossButton.textContent = 'BOSS 重生 (5分)';
+            startBossButton.onclick = function() { startTimer(timerId, 5 * 60); };
+
+            const startMutantButton = document.createElement('button');
+            startMutantButton.textContent = '變異體 (2分)';
+            startMutantButton.onclick = function() { startTimer(timerId, 2 * 60); };
+
+            const startMutantKillButton = document.createElement('button');
+            startMutantKillButton.textContent = '變異體死亡 (8分)';
+            startMutantKillButton.onclick = function() { startTimer(timerId, 8 * 60); };
+
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'delete-button';
+            deleteButton.textContent = 'X';
+            deleteButton.onclick = function() { 
+                clearInterval(timers[timerId].countdown);
+                timerContainer.remove();
+                removeExpiredTimer(timerId);
+                delete timers[timerId];
+            };
+
+            const inputContainer = document.createElement('div');
+            inputContainer.appendChild(inputNumber);
+            inputContainer.appendChild(channelLabel);
+
+            timerContainer.appendChild(deleteButton);
+            timerContainer.appendChild(bossLabel);
+            timerContainer.appendChild(inputContainer);
+            timerContainer.appendChild(timerDisplay);
+            timerContainer.appendChild(reminderText);
+            timerContainer.appendChild(startBossButton);
+            timerContainer.appendChild(startMutantButton);
+            timerContainer.appendChild(startMutantKillButton);
+
+            document.getElementById('timers-container').appendChild(timerContainer);
+
+            timers[timerId] = {
+                countdown: null,
+                timeLeft: 0,
+                elapsedTime: 0,
+                reminderTriggered: false,
+                timerDisplay: timerDisplay,
+                reminderText: reminderText,
+                inputNumber: inputNumber,
+                isRunning: false,
+                isCountingUp: false,
+                channel: timerId.toString(),
+                expiredAt: null
+            };
+        }
+
+        function startTimer(timerId, countdownTime) {
+            const timer = timers[timerId];
+            
+            if (timer.countdown) {
+                clearInterval(timer.countdown);
+            }
+            
+            // 如果之前已到期，從到期列表中移除
+            removeExpiredTimer(timerId);
+            
+            timer.timeLeft = countdownTime;
+            timer.elapsedTime = 0;
+            timer.reminderTriggered = false;
+            timer.isRunning = true;
+            timer.isCountingUp = false;
+            timer.expiredAt = null;
+            timer.timerDisplay.classList.remove('time-up');
+            timer.reminderText.textContent = '';
+            
+            updateDisplay(timerId);
+            
+            timer.countdown = setInterval(function() {
+                if (!timer.isCountingUp) {
+                    // 倒數模式
+                    timer.timeLeft--;
+                    
+                    if (timer.timeLeft <= 0) {
+                        // 切換到正計時模式
+                        timer.isCountingUp = true;
+                        timer.timerDisplay.classList.add('time-up');
+                        timer.expiredAt = new Date(); // 記錄到期時間
+                        
+                        // 添加到到期列表並排序
+                        addExpiredTimer(timerId);
+                        
+                        if(soundEnabled) {
+                            const channel = timer.inputNumber.value || timerId;
+                            speak(`${channel}頻道BOSS已經出了`);
+                        }
+                    }
+                } else {
+                    // 正計時模式
+                    timer.elapsedTime++;
+                }
+                
+                updateDisplay(timerId);
+            }, 1000);
+        }
+
+        function updateDisplay(timerId) {
+            const timer = timers[timerId];
+            let displayText = '';
+            
+            if (!timer.isCountingUp) {
+                // 倒數模式顯示
+                const mins = Math.floor(timer.timeLeft / 60);
+                const secs = timer.timeLeft % 60;
+                displayText = `${padTime(mins)}:${padTime(secs)}`;
+                
+                if (timer.timeLeft <= 30 && !timer.reminderTriggered) {
+                    timer.reminderTriggered = true;
+                    timer.reminderText.textContent = '30秒提醒！';
+                    
+                    // 30秒時朗讀頻道名稱
+                    if(soundEnabled) {
+                        const channel = timer.inputNumber.value || timerId;
+                        speak(`${channel}頻道將要重生`);
+                    }
+                }
+            } else {
+                // 正計時模式顯示
+                const mins = Math.floor(timer.elapsedTime / 60);
+                const secs = timer.elapsedTime % 60;
+                displayText = `+${padTime(mins)}:${padTime(secs)}`;
+            }
+            
+            timer.timerDisplay.textContent = displayText;
+        }
+
+        // 添加到到期列表
+        function addExpiredTimer(timerId) {
+            const timer = timers[timerId];
+            if (!timer) return;
+            
+            // 更新頻道名稱
+            timer.channel = timer.inputNumber.value || timerId.toString();
+            
+            // 如果已經在列表中，先移除
+            removeExpiredTimer(timerId);
+            
+            // 添加到列表
+            expiredTimers.push({
+                id: timerId,
+                channel: timer.channel,
+                expiredAt: timer.expiredAt,
+                elapsedTime: timer.elapsedTime
+            });
+            
+            // 按到期時間排序 (最早的在前)
+            expiredTimers.sort((a, b) => a.expiredAt - b.expiredAt);
+            
+            updateExpiredList();
+        }
+
+        // 從到期列表移除
+        function removeExpiredTimer(timerId) {
+            expiredTimers = expiredTimers.filter(t => t.id !== timerId);
+            updateExpiredList();
+        }
+
+        // 更新到期列表顯示
+        function updateExpiredList() {
+            const expiredList = document.getElementById('expired-list');
+            expiredList.innerHTML = '';
+            
+            if (expiredTimers.length === 0) {
+                expiredList.innerHTML = '<p style="text-align: center; color: #666;">暫無紀錄</p>';
+                return;
+            }
+            
+            expiredTimers.forEach(timer => {
+                const item = document.createElement('div');
+                item.className = 'expired-item';
+                
+                const mins = Math.floor(timer.elapsedTime / 60);
+                const secs = timer.elapsedTime % 60;
+                const timeStr = `+${padTime(mins)}:${padTime(secs)}`;
+                
+                item.innerHTML = `
+                    <div>
+                        <span class="expired-channel">${timer.channel}頻道</span>
+                        <span class="expired-time">${timeStr}</span>
+                    </div>
+                    <button class="restart-btn" data-id="${timer.id}">重新計時</button>
+                `;
+                
+                expiredList.appendChild(item);
+            });
+            
+            // 添加重新計時按鈕事件
+            document.querySelectorAll('.restart-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    if (timers[id]) {
+                        // 根據按鈕文字判斷要使用的時間
+                        const btnText = this.textContent;
+                        let seconds = 300; // 預設5分鐘
+                        
+                        if (btnText.includes('BOSS')) {
+                            seconds = 5 * 60;
+                        } else if (btnText.includes('變異體')) {
+                            seconds = 2 * 60;
+                        } else if (btnText.includes('死亡')) {
+                            seconds = 8 * 60;
+                        }
+                        
+                        startTimer(id, seconds);
+                    }
+                });
+            });
+        }
+
+        function padTime(time) {
+            return time < 10 ? '0' + time : time;
+        }
+
+        // 文字轉語音函數
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-TW';
+                utterance.rate = 1.0;
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        window.onload = function() {
+            addTimer();
+        };
+    </script>
+</body>
+</html>
